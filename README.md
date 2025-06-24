@@ -117,44 +117,63 @@ The Exa MCP server includes the following tools, which can be enabled by adding 
 - **github_search**: Search GitHub repositories using Exa AI - performs real-time searches on GitHub.com to find relevant repositories, issues, and GitHub accounts.
 
 #### Websets API Tools
-The Exa MCP server now includes comprehensive support for the Websets API, enabling advanced targeted search, data enrichment, and monitoring capabilities:
+The Exa MCP server now includes comprehensive support for the Websets API, enabling advanced targeted search, data enrichment, and monitoring capabilities. Tools are organized by common B2B sales and marketing workflows:
 
-##### Webset Management
-- **create_webset_exa**: Create a new Webset for targeted search and enrichment with optional initial search and enrichment tasks.
-- **list_websets_exa**: List all Websets with pagination support and status information.
-- **get_webset_exa**: Get detailed information about a specific Webset including searches, enrichments, and monitors.
-- **update_webset_exa**: Update Webset metadata, external ID, or status (pause/resume).
-- **delete_webset_exa**: Delete a Webset and all its associated data.
-- **cancel_webset_exa**: Cancel all running operations for a Webset.
+##### 🎯 Core Discovery Tools (Used Daily)
+These are the most frequently used tools for finding and managing leads:
+- **create_webset_exa**: Start lead discovery with search criteria (e.g., "Find CTOs at B2B SaaS companies")
+- **list_webset_items_exa**: View all discovered leads with their data
+- **get_webset_item_exa**: Deep dive into specific prospects
+- **list_websets_exa**: Manage all your websets
+- **get_webset_exa**: Check webset status and progress
+- **search_webset_items_exa**: Filter items by type, verification status, or custom criteria
 
-##### Webset Search Operations
-- **create_webset_search_exa**: Create a search within a Webset with custom query and evaluation criteria.
-- **get_webset_search_exa**: Get details of a specific search including status and progress.
-- **list_webset_searches_exa**: List all searches for a Webset.
-- **cancel_webset_search_exa**: Cancel a running search operation.
+##### 📧 Enrichment Tools (Critical for Outreach)
+Add contact information and additional data to your leads:
+- **create_webset_enrichment_exa**: Add enrichments (emails, phones, LinkedIn profiles, company data)
+- **list_webset_enrichments_exa**: Monitor enrichment progress
+- **get_webset_enrichment_exa**: Check enrichment details
+- **delete_webset_enrichment_exa**: Remove unnecessary enrichments
+- **cancel_webset_enrichment_exa**: Stop running enrichments
 
-##### Webset Enrichment
-- **create_webset_enrichment_exa**: Create enrichment tasks to extract specific data from found items.
-- **get_webset_enrichment_exa**: Get enrichment task details.
-- **list_webset_enrichments_exa**: List all enrichment tasks for a Webset.
-- **delete_webset_enrichment_exa**: Delete an enrichment task.
-- **cancel_webset_enrichment_exa**: Cancel a running enrichment.
+##### 📥 Import & Automation Tools (High-Value Workflows)
+Import existing data and set up automated monitoring:
+- **create_import_exa**: Import CSV/JSON data (e.g., conference attendee lists)
+- **get_import_exa**: Check import status
+- **create_webset_monitor_exa**: Set up daily/weekly automated searches
+- **update_webset_monitor_exa**: Adjust monitor settings
+- **create_webhook_exa**: Get real-time notifications
+- **list_webhook_attempts_exa**: Debug webhook delivery
 
-##### Webset Items
-- **list_webset_items_exa**: List all items found and verified within a Webset.
-- **get_webset_item_exa**: Get detailed information about a specific item.
-- **delete_webset_item_exa**: Delete an item from a Webset.
-- **search_webset_items_exa**: Search and filter items with various criteria.
+##### 🔧 Search & Data Management Tools
+Fine-tune searches and manage your data:
+- **create_webset_search_exa**: Add new searches to existing websets
+- **get_webset_search_exa**: Check search progress
+- **list_webset_searches_exa**: View all searches
+- **cancel_webset_search_exa**: Stop unnecessary searches
+- **update_webset_exa**: Add tags and metadata for organization
+- **delete_webset_exa**: Remove old websets
+- **delete_webset_item_exa**: Remove duplicate or irrelevant items
+- **cancel_webset_exa**: Cancel all operations for a webset
 
-##### Additional Operations
-- **create_import_exa**: Import data from external sources (CSV, JSON).
-- **get_import_exa**: Get import job details.
-- **create_webset_monitor_exa**: Create monitors for periodic searches.
-- **update_webset_monitor_exa**: Update monitor settings.
-- **create_webhook_exa**: Create webhooks for event notifications.
-- **list_webhook_attempts_exa**: List webhook delivery attempts.
-- **list_events_exa**: List system events.
-- **get_event_exa**: Get event details.
+##### 📊 System Monitoring Tools
+Track what's happening in your system:
+- **list_events_exa**: Monitor all system events
+- **get_event_exa**: Get detailed event information
+
+#### Common Workflow Examples
+
+**Lead Discovery Flow:**
+1. `create_webset_exa` with your ideal customer profile
+2. `create_webset_enrichment_exa` to add emails
+3. `list_webset_items_exa` to get your enriched leads
+
+**Monitoring Flow:**
+1. `create_webset_exa` for your monitoring criteria
+2. `create_webset_monitor_exa` with daily cadence
+3. `create_webhook_exa` to get notified of new leads
+
+See [Websets Workflows Guide](docs/WEBSETS_WORKFLOWS.md) for detailed workflow examples.
 
 You can choose which tools to enable by adding the `--tools` parameter to your Claude Desktop configuration:
 
@@ -198,10 +217,9 @@ For enabling multiple tools, use a comma-separated list:
 }
 ```
 
-#### Example: Enabling Websets API Tools
+#### Example: Enabling Websets API Tools by Workflow
 
-To enable Websets API functionality for targeted search and enrichment:
-
+**For Lead Discovery & Enrichment (Most Common):**
 ```json
 {
   "mcpServers": {
@@ -210,7 +228,26 @@ To enable Websets API functionality for targeted search and enrichment:
       "args": [
         "-y",
         "exa-mcp-server",
-        "--tools=create_webset_exa,list_websets_exa,get_webset_exa,create_webset_search_exa,create_webset_enrichment_exa,list_webset_items_exa,create_webset_monitor_exa"
+        "--tools=create_webset_exa,list_webset_items_exa,get_webset_item_exa,create_webset_enrichment_exa,list_websets_exa,search_webset_items_exa"
+      ],
+      "env": {
+        "EXA_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+**For Import & Monitoring Workflows:**
+```json
+{
+  "mcpServers": {
+    "exa": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "exa-mcp-server",
+        "--tools=create_import_exa,create_webset_monitor_exa,create_webhook_exa,list_events_exa"
       ],
       "env": {
         "EXA_API_KEY": "your-api-key-here"

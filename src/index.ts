@@ -193,70 +193,101 @@ export default function ({ config }: { config: z.infer<typeof configSchema> }) {
       registeredTools.push('github_search_exa');
     }
     
-    // Register Websets API tools
-    const websetTools = [
-      'create_webset_exa', 'list_websets_exa', 'get_webset_exa', 
-      'update_webset_exa', 'delete_webset_exa', 'cancel_webset_exa'
+    // Register Websets API tools - Organized by workflow priority
+    
+    // Core Discovery & Management Tools (Most Used Daily)
+    const websetCoreTools = [
+      'create_webset_exa',           // Start lead discovery
+      'list_webset_items_exa',       // View discovered leads
+      'get_webset_item_exa',         // Deep dive into leads
+      'list_websets_exa',            // Manage all websets
+      'get_webset_exa',              // Check webset status
+      'search_webset_items_exa'      // Filter and find specific items
     ];
-    const websetSearchTools = [
-      'create_webset_search_exa', 'get_webset_search_exa',
-      'list_webset_searches_exa', 'cancel_webset_search_exa'
-    ];
+    
+    // Enrichment Tools (Critical for Contact Data)
     const websetEnrichmentTools = [
-      'create_webset_enrichment_exa', 'get_webset_enrichment_exa',
-      'list_webset_enrichments_exa', 'delete_webset_enrichment_exa',
-      'cancel_webset_enrichment_exa'
-    ];
-    const websetItemTools = [
-      'list_webset_items_exa', 'get_webset_item_exa',
-      'delete_webset_item_exa', 'search_webset_items_exa'
-    ];
-    const websetOperationTools = [
-      'create_import_exa', 'get_import_exa',
-      'create_webset_monitor_exa', 'update_webset_monitor_exa',
-      'create_webhook_exa', 'list_webhook_attempts_exa',
-      'list_events_exa', 'get_event_exa'
+      'create_webset_enrichment_exa',     // Add email/phone/LinkedIn enrichments
+      'list_webset_enrichments_exa',      // Monitor enrichment progress
+      'get_webset_enrichment_exa',        // Check enrichment details
+      'delete_webset_enrichment_exa',     // Remove enrichments
+      'cancel_webset_enrichment_exa'      // Stop running enrichments
     ];
     
-    // Register Webset Management tools
-    if (websetTools.some(tool => shouldRegisterTool(tool))) {
+    // Import & Automation Tools (Weekly High-Value)
+    const websetAutomationTools = [
+      'create_import_exa',                // Import CSV/JSON data
+      'get_import_exa',                   // Check import status
+      'create_webset_monitor_exa',        // Set up automated monitoring
+      'update_webset_monitor_exa',        // Adjust monitor settings
+      'create_webhook_exa',               // Real-time notifications
+      'list_webhook_attempts_exa'         // Debug webhooks
+    ];
+    
+    // Search & Data Management Tools
+    const websetManagementTools = [
+      'create_webset_search_exa',         // Add searches to websets
+      'get_webset_search_exa',            // Check search progress
+      'list_webset_searches_exa',         // View all searches
+      'cancel_webset_search_exa',         // Stop searches
+      'update_webset_exa',                // Update metadata/tags
+      'delete_webset_exa',                // Delete websets
+      'delete_webset_item_exa',           // Remove items
+      'cancel_webset_exa'                 // Cancel all operations
+    ];
+    
+    // System Monitoring Tools
+    const websetSystemTools = [
+      'list_events_exa',                  // Monitor system events
+      'get_event_exa'                     // Event details
+    ];
+    
+    // Register all Websets tools based on workflow groupings
+    const allWebsetTools = [
+      ...websetCoreTools,
+      ...websetEnrichmentTools,
+      ...websetAutomationTools,
+      ...websetManagementTools,
+      ...websetSystemTools
+    ];
+    
+    // Check which registration functions we need to call
+    const needsManagement = [...websetCoreTools, ...websetManagementTools]
+      .some(tool => shouldRegisterTool(tool));
+    const needsSearch = websetManagementTools
+      .filter(t => t.includes('search'))
+      .some(tool => shouldRegisterTool(tool));
+    const needsEnrichment = websetEnrichmentTools
+      .some(tool => shouldRegisterTool(tool));
+    const needsItems = websetCoreTools
+      .filter(t => t.includes('item'))
+      .some(tool => shouldRegisterTool(tool));
+    const needsOperations = [...websetAutomationTools, ...websetSystemTools]
+      .some(tool => shouldRegisterTool(tool));
+    
+    // Register the tool groups
+    if (needsManagement) {
       registerWebsetManagementTools(server, config);
-      websetTools.forEach(tool => {
-        if (shouldRegisterTool(tool)) registeredTools.push(tool);
-      });
     }
-    
-    // Register Webset Search tools
-    if (websetSearchTools.some(tool => shouldRegisterTool(tool))) {
+    if (needsSearch) {
       registerWebsetSearchTools(server, config);
-      websetSearchTools.forEach(tool => {
-        if (shouldRegisterTool(tool)) registeredTools.push(tool);
-      });
     }
-    
-    // Register Webset Enrichment tools
-    if (websetEnrichmentTools.some(tool => shouldRegisterTool(tool))) {
+    if (needsEnrichment) {
       registerWebsetEnrichmentTools(server, config);
-      websetEnrichmentTools.forEach(tool => {
-        if (shouldRegisterTool(tool)) registeredTools.push(tool);
-      });
     }
-    
-    // Register Webset Item tools
-    if (websetItemTools.some(tool => shouldRegisterTool(tool))) {
+    if (needsItems) {
       registerWebsetItemTools(server, config);
-      websetItemTools.forEach(tool => {
-        if (shouldRegisterTool(tool)) registeredTools.push(tool);
-      });
+    }
+    if (needsOperations) {
+      registerWebsetOperationTools(server, config);
     }
     
-    // Register Webset Operation tools
-    if (websetOperationTools.some(tool => shouldRegisterTool(tool))) {
-      registerWebsetOperationTools(server, config);
-      websetOperationTools.forEach(tool => {
-        if (shouldRegisterTool(tool)) registeredTools.push(tool);
-      });
-    }
+    // Track which tools were registered
+    allWebsetTools.forEach(tool => {
+      if (shouldRegisterTool(tool)) {
+        registeredTools.push(tool);
+      }
+    });
     
     if (config.debug) {
       log(`Registered ${registeredTools.length} tools: ${registeredTools.join(', ')}`);
