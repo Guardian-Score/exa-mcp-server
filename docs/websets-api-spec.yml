@@ -1,0 +1,807 @@
+openapi: 3.1.0
+info:
+  title: Exa Websets API
+  description: |
+    Full LLM-readable specification for the Exa Websets API.
+    Includes every Websets-related endpoint; the separate Search API is **not** exposed here.
+  version: 1.0.0
+
+servers:
+  - url: https://api.exa.ai
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+
+  parameters:
+    cursor:
+      name: cursor
+      in: query
+      description: Pagination cursor
+      schema: { type: string }
+    limit:
+      name: limit
+      in: query
+      description: Maximum results (default 20)
+      schema: { type: integer, minimum: 1, maximum: 100 }
+    webset:
+      name: webset
+      in: path
+      required: true
+      schema: { type: string }
+    id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+    streamId:
+      name: streamId
+      in: path
+      required: true
+      schema: { type: string }
+    runId:
+      name: runId
+      in: path
+      required: true
+      schema: { type: string }
+
+  schemas:
+    Webset:
+      type: object
+      properties:
+        id: { type: string }
+        status: { type: string }
+        externalId: { type: string }
+        metadata: { type: object }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required: [id, status]
+    Item:
+      type: object
+      properties:
+        id: { type: string }
+        url: { type: string }
+        entity: { type: object }
+      required: [id, url]
+    Search:
+      type: object
+      properties:
+        id: { type: string }
+        query: { type: string }
+        status: { type: string }
+      required: [id, query]
+    Enrichment:
+      type: object
+      properties:
+        id: { type: string }
+        description: { type: string }
+        status: { type: string }
+      required: [id, description]
+    Stream:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        status: { type: string }
+      required: [id, name]
+    StreamRun:
+      type: object
+      properties:
+        id: { type: string }
+        status: { type: string }
+      required: [id]
+    Import:
+      type: object
+      properties:
+        id: { type: string }
+        status: { type: string }
+        format: { type: string }
+      required: [id, status]
+    Monitor:
+      type: object
+      properties:
+        id: { type: string }
+        websetId: { type: string }
+        status: { type: string }
+      required: [id, websetId]
+    Webhook:
+      type: object
+      properties:
+        id: { type: string }
+        url: { type: string }
+        events: { type: array, items: { type: string } }
+      required: [id, url]
+    Event:
+      type: object
+      properties:
+        id: { type: string }
+        type: { type: string }
+        data: { type: object }
+      required: [id, type]
+
+paths:
+
+  /v0/websets:
+    get:
+      summary: List Websets
+      security: [ { ApiKeyAuth: [] } ]
+      parameters: [ { $ref: '#/components/parameters/cursor' },
+                    { $ref: '#/components/parameters/limit' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/Webset' } }
+                  hasMore: { type: boolean }
+                  nextCursor: { type: string }
+    post:
+      summary: Create Webset
+      security: [ { ApiKeyAuth: [] } ]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                externalId: { type: string }
+                metadata: { type: object }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Webset' }
+
+  /v0/websets/{id}:
+    parameters: [ { $ref: '#/components/parameters/id' } ]
+    get:
+      summary: Get Webset
+      security: [ { ApiKeyAuth: [] } ]
+      parameters:
+        - name: expand
+          in: query
+          schema: { type: array, items: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Webset' }
+    post:
+      summary: Update Webset
+      security: [ { ApiKeyAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                externalId: { type: string }
+                metadata: { type: object }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Webset' }
+    delete:
+      summary: Delete Webset
+      security: [ { ApiKeyAuth: [] } ]
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Webset' }
+
+  /v0/websets/{id}/cancel:
+    parameters: [ { $ref: '#/components/parameters/id' } ]
+    post:
+      summary: Cancel Webset operations
+      security: [ { ApiKeyAuth: [] } ]
+      responses:
+        '200':
+          description: Canceled
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Webset' }
+
+  /v0/websets/{webset}/items:
+    parameters: [ { $ref: '#/components/parameters/webset' } ]
+    get:
+      summary: List Items in a Webset
+      security: [ { ApiKeyAuth: [] } ]
+      parameters: [ { $ref: '#/components/parameters/cursor' },
+                    { $ref: '#/components/parameters/limit' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/Item' } }
+                  hasMore: { type: boolean }
+                  nextCursor: { type: string }
+
+  /v0/websets/{webset}/items/{id}:
+    parameters: [ { $ref: '#/components/parameters/webset' },
+                  { $ref: '#/components/parameters/id' } ]
+    get:
+      summary: Get Item
+      security: [ { ApiKeyAuth: [] } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Item' }
+    delete:
+      summary: Delete Item
+      security: [ { ApiKeyAuth: [] } ]
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Item' }
+
+  /v0/websets/{webset}/searches:
+    parameters: [ { $ref: '#/components/parameters/webset' } ]
+    post:
+      summary: Create Search
+      security: [ { ApiKeyAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query: { type: string }
+                count: { type: integer }
+                entity: { type: object }
+                criteria: { type: array, items: { type: object } }
+                exclude: { type: array, items: { type: object } }
+                behavior: { type: string }
+                metadata: { type: object }
+              required: [query]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Search' }
+    get:
+      summary: List Searches
+      security: [ { ApiKeyAuth: [] } ]
+      parameters: [ { $ref: '#/components/parameters/cursor' },
+                    { $ref: '#/components/parameters/limit' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/Search' } }
+                  hasMore: { type: boolean }
+                  nextCursor: { type: string }
+
+  /v0/websets/{webset}/searches/{id}:
+    parameters: [ { $ref: '#/components/parameters/webset' },
+                  { $ref: '#/components/parameters/id' } ]
+    get:
+      summary: Get Search
+      security: [ { ApiKeyAuth: [] } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Search' }
+
+  /v0/websets/{webset}/searches/{id}/cancel:
+    parameters: [ { $ref: '#/components/parameters/webset' },
+                  { $ref: '#/components/parameters/id' } ]
+    post:
+      summary: Cancel Search
+      security: [ { ApiKeyAuth: [] } ]
+      responses:
+        '200':
+          description: Canceled
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Search' }
+
+  /v0/websets/{webset}/enrichments:
+    parameters: [ { $ref: '#/components/parameters/webset' } ]
+    post:
+      summary: Create Enrichment
+      security: [ { ApiKeyAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description: { type: string }
+                format: { type: string }
+                options: { type: array, items: { type: object } }
+                metadata: { type: object }
+              required: [description]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Enrichment' }
+    get:
+      summary: List Enrichments
+      security: [ { ApiKeyAuth: [] } ]
+      parameters: [ { $ref: '#/components/parameters/cursor' },
+                    { $ref: '#/components/parameters/limit' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/Enrichment' } }
+                  hasMore: { type: boolean }
+                  nextCursor: { type: string }
+
+  /v0/websets/{webset}/enrichments/{id}:
+    parameters: [ { $ref: '#/components/parameters/webset' },
+                  { $ref: '#/components/parameters/id' } ]
+    get:
+      summary: Get Enrichment
+      security: [ { ApiKeyAuth: [] } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Enrichment' }
+    delete:
+      summary: Delete Enrichment
+      security: [ { ApiKeyAuth: [] } ]
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Enrichment' }
+
+  /v0/websets/{webset}/enrichments/{id}/cancel:
+    parameters: [ { $ref: '#/components/parameters/webset' },
+                  { $ref: '#/components/parameters/id' } ]
+    post:
+      summary: Cancel Enrichment
+      security: [ { ApiKeyAuth: [] } ]
+      responses:
+        '200':
+          description: Canceled
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Enrichment' }
+
+  /v0/websets/{webset}/streams:
+    parameters: [ { $ref: '#/components/parameters/webset' } ]
+    post:
+      summary: Create Stream
+      security: [ { ApiKeyAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                config: { type: object }
+              required: [name, config]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Stream' }
+    get:
+      summary: List Streams
+      security: [ { ApiKeyAuth: [] } ]
+      parameters: [ { $ref: '#/components/parameters/cursor' },
+                    { $ref: '#/components/parameters/limit' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/Stream' } }
+                  hasMore: { type: boolean }
+                  nextCursor: { type: string }
+
+  /v0/websets/{webset}/streams/{streamId}:
+    parameters: [ { $ref: '#/components/parameters/webset' },
+                  { $ref: '#/components/parameters/streamId' } ]
+    get:
+      summary: Get Stream
+      security: [ { ApiKeyAuth: [] } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Stream' }
+    patch:
+      summary: Update Stream
+      security: [ { ApiKeyAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                config: { type: object }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Stream' }
+    delete:
+      summary: Delete Stream
+      security: [ { ApiKeyAuth: [] } ]
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Stream' }
+
+  /v0/websets/{webset}/streams/{streamId}/runs:
+    parameters: [ { $ref: '#/components/parameters/webset' },
+                  { $ref: '#/components/parameters/streamId' } ]
+    get:
+      summary: List Stream Runs
+      security: [ { ApiKeyAuth: [] } ]
+      parameters: [ { $ref: '#/components/parameters/cursor' },
+                    { $ref: '#/components/parameters/limit' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/StreamRun' } }
+                  hasMore: { type: boolean }
+                  nextCursor: { type: string }
+
+  /v0/websets/{webset}/streams/{streamId}/runs/{runId}:
+    parameters: [ { $ref: '#/components/parameters/webset' },
+                  { $ref: '#/components/parameters/streamId' },
+                  { $ref: '#/components/parameters/runId' } ]
+    get:
+      summary: Get Stream Run
+      security: [ { ApiKeyAuth: [] } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StreamRun' }
+
+  /v0/imports:
+    get:
+      summary: List Imports
+      security: [ { ApiKeyAuth: [] } ]
+      parameters: [ { $ref: '#/components/parameters/cursor' },
+                    { $ref: '#/components/parameters/limit' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/Import' } }
+                  hasMore: { type: boolean }
+                  nextCursor: { type: string }
+    post:
+      summary: Create Import
+      security: [ { ApiKeyAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                size: { type: integer }
+                format: { type: string }
+                title: { type: string }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Import' }
+
+  /v0/imports/{id}:
+    parameters: [ { $ref: '#/components/parameters/id' } ]
+    get:
+      summary: Get Import
+      security: [ { ApiKeyAuth: [] } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Import' }
+    patch:
+      summary: Update Import
+      security: [ { ApiKeyAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                metadata: { type: object }
+                title: { type: string }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Import' }
+    delete:
+      summary: Delete Import
+      security: [ { ApiKeyAuth: [] } ]
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Import' }
+
+  /v0/monitors:
+    get:
+      summary: List Monitors
+      security: [ { ApiKeyAuth: [] } ]
+      parameters: [ { $ref: '#/components/parameters/cursor' },
+                    { $ref: '#/components/parameters/limit' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/Monitor' } }
+                  hasMore: { type: boolean }
+                  nextCursor: { type: string }
+    post:
+      summary: Create Monitor
+      security: [ { ApiKeyAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                websetId: { type: string }
+                cadence: { type: object }
+                behavior: { type: object }
+              required: [websetId, cadence, behavior]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Monitor' }
+
+  /v0/monitors/{id}:
+    parameters: [ { $ref: '#/components/parameters/id' } ]
+    get:
+      summary: Get Monitor
+      security: [ { ApiKeyAuth: [] } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Monitor' }
+    patch:
+      summary: Update Monitor
+      security: [ { ApiKeyAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: string }
+                cadence: { type: object }
+                behavior: { type: object }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Monitor' }
+    delete:
+      summary: Delete Monitor
+      security: [ { ApiKeyAuth: [] } ]
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Monitor' }
+
+  /v0/webhooks:
+    get:
+      summary: List Webhooks
+      security: [ { ApiKeyAuth: [] } ]
+      parameters: [ { $ref: '#/components/parameters/cursor' },
+                    { $ref: '#/components/parameters/limit' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/Webhook' } }
+                  hasMore: { type: boolean }
+                  nextCursor: { type: string }
+    post:
+      summary: Create Webhook
+      security: [ { ApiKeyAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                events: { type: array, items: { type: string } }
+                url: { type: string }
+              required: [events, url]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Webhook' }
+
+  /v0/webhooks/{id}:
+    parameters: [ { $ref: '#/components/parameters/id' } ]
+    get:
+      summary: Get Webhook
+      security: [ { ApiKeyAuth: [] } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Webhook' }
+    patch:
+      summary: Update Webhook
+      security: [ { ApiKeyAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                events: { type: array, items: { type: string } }
+                url: { type: string }
+                metadata: { type: object }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Webhook' }
+    delete:
+      summary: Delete Webhook
+      security: [ { ApiKeyAuth: [] } ]
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Webhook' }
+
+  /v0/webhooks/{id}/attempts:
+    parameters: [ { $ref: '#/components/parameters/id' } ]
+    get:
+      summary: List Webhook attempts
+      security: [ { ApiKeyAuth: [] } ]
+      parameters:
+        - name: eventType
+          in: query
+          schema: { type: string }
+        - { $ref: '#/components/parameters/cursor' }
+        - { $ref: '#/components/parameters/limit' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { type: object } }
+                  hasMore: { type: boolean }
+                  nextCursor: { type: string }
+
+  /v0/events:
+    get:
+      summary: List Events
+      security: [ { ApiKeyAuth: [] } ]
+      parameters:
+        - { $ref: '#/components/parameters/cursor' }
+        - { $ref: '#/components/parameters/limit' }
+        - name: types
+          in: query
+          schema: { type: array, items: { type: string } }
+        - name: createdBefore
+          in: query
+          schema: { type: string, format: date-time }
+        - name: createdAfter
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/Event' } }
+                  hasMore: { type: boolean }
+                  nextCursor: { type: string }
+
+  /v0/events/{id}:
+    parameters: [ { $ref: '#/components/parameters/id' } ]
+    get:
+      summary: Get Event
+      security: [ { ApiKeyAuth: [] } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Event' }
