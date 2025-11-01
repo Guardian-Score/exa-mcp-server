@@ -180,13 +180,11 @@ export function registerWebsetSearchTools(server: McpServer, config?: { exaApiKe
   // List Webset Searches Tool
   server.tool(
     "list_webset_searches_exa",
-    "List all searches for a specific Webset. This shows all search operations including their status, query, and progress.",
+    "List all searches for a specific Webset. Note: Searches are embedded in the webset object, so this retrieves the webset and extracts its searches array.",
     {
-      websetId: z.string().describe("The unique identifier of the Webset"),
-      cursor: z.string().optional().describe("Pagination cursor from previous response"),
-      limit: z.number().optional().describe("Number of results per page (default: 25, max: 200)")
+      websetId: z.string().describe("The unique identifier of the Webset")
     },
-    async ({ websetId, cursor, limit }) => {
+    async ({ websetId }) => {
       const requestId = `list_webset_searches_exa-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
       const logger = createRequestLogger(requestId, 'list_webset_searches_exa');
       
@@ -202,18 +200,14 @@ export function registerWebsetSearchTools(server: McpServer, config?: { exaApiKe
           timeout: API_CONFIG.REQUEST_TIMEOUT
         });
 
-        const params = new URLSearchParams();
-        if (cursor) params.append('cursor', cursor);
-        if (limit) params.append('limit', limit.toString());
+        // Searches are embedded in the webset object, not a separate endpoint
+        const url = API_CONFIG.ENDPOINTS.WEBSET.replace(':id', websetId);
+        const response = await axiosInstance.get(url);
         
-        const url = API_CONFIG.ENDPOINTS.WEBSET_SEARCHES.replace(':websetId', websetId);
-        const response = await axiosInstance.get(url, { params });
+        // Extract searches from webset object
+        const searches = response.data.searches || [];
         
-        // Note: The response structure might be an array or paginated list
-        // Adjust based on actual API response
-        const searches = Array.isArray(response.data) ? response.data : response.data.data || [];
-        
-        logger.log(`Retrieved ${searches.length} searches`);
+        logger.log(`Retrieved ${searches.length} searches from webset`);
         
         const formattedResult = {
           websetId: websetId,
@@ -223,8 +217,12 @@ export function registerWebsetSearchTools(server: McpServer, config?: { exaApiKe
             status: search.status,
             query: search.query,
             targetCount: search.count,
+            behavior: search.behavior,
+            entity: search.entity,
+            criteria: search.criteria,
             progress: search.progress,
-            createdAt: search.createdAt
+            createdAt: search.createdAt,
+            updatedAt: search.updatedAt
           }))
         };
         

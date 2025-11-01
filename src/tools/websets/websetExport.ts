@@ -39,187 +39,106 @@ const deleteExportSchema = z.object({
 
 export function registerWebsetExportTools(server: McpServer, config: any) {
   // Create Export
-  server.addTool({
-    name: "create_export_exa",
-    description: "Create an export job to download webset items in various formats",
-    inputSchema: createExportSchema,
-    handler: async (args) => {
-      try {
-        const { websetId, ...exportData } = args;
-        const endpoint = API_CONFIG.ENDPOINTS.WEBSET_EXPORTS.replace(':websetId', websetId);
-        
-        const body: CreateExportInput = {
-          format: exportData.format,
-          ...(exportData.filters && { filters: exportData.filters }),
-          ...(exportData.fields && { fields: exportData.fields })
-        };
-        
-        const response = await axios.post<Export>(
-          `${API_CONFIG.BASE_URL}${endpoint}`,
-          body,
-          {
-            headers: {
-              'accept': 'application/json',
-              'content-type': 'application/json',
-              'x-api-key': config?.exaApiKey || process.env.EXA_API_KEY || ''
-            }
-          }
-        );
-        
-        return {
-          success: true,
-          data: response.data,
-          message: `Export created successfully. Status: ${response.data.status}`
-        };
-      } catch (error) {
-        if (isAxiosError(error)) {
-          return {
-            success: false,
-            error: error.response?.data?.error || error.message,
-            details: error.response?.data
-          };
-        }
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error occurred'
-        };
-      }
+  server.tool(
+    "create_export_exa",
+    {
+      description: "Create an export job to download webset items in various formats. NOTE: Export API is not yet available - use list_webset_items_exa for data access.",
+      paramsSchema: createExportSchema.shape
+    },
+    async (args) => {
+      // Export API not yet implemented by Exa
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            available: false,
+            feature: 'Webset Exports',
+            message: 'Export functionality is not yet available in the Exa Websets API. The export endpoints return 404 errors as they have not been implemented yet.',
+            requestedFormat: args.format,
+            alternatives: [
+              'Use list_webset_items_exa to fetch all items with pagination (limit up to 200 per page)',
+              'Export items programmatically in your application after fetching',
+              'Use the Exa Dashboard at https://websets.exa.ai for manual exports',
+              'Use get_webset_item_exa to retrieve individual items with full details'
+            ],
+            documentation: 'https://docs.exa.ai/websets/api/overview',
+            note: 'Contact Exa support for updates on export API availability'
+          }, null, 2)
+        }]
+      };
     }
-  });
+  );
 
   // Get Export
-  server.addTool({
-    name: "get_export_exa",
-    description: "Get details of a specific export job including download URL when ready",
-    inputSchema: getExportSchema,
-    handler: async (args) => {
-      try {
-        const endpoint = API_CONFIG.ENDPOINTS.WEBSET_EXPORT_BY_ID
-          .replace(':websetId', args.websetId)
-          .replace(':exportId', args.exportId);
-        
-        const response = await axios.get<Export>(
-          `${API_CONFIG.BASE_URL}${endpoint}`,
-          {
-            headers: {
-              'accept': 'application/json',
-              'x-api-key': config?.exaApiKey || process.env.EXA_API_KEY || ''
-            }
-          }
-        );
-        
-        return {
-          success: true,
-          data: response.data,
-          downloadReady: response.data.status === 'completed' && !!response.data.downloadUrl
-        };
-      } catch (error) {
-        if (isAxiosError(error)) {
-          return {
-            success: false,
-            error: error.response?.data?.error || error.message,
-            details: error.response?.data
-          };
-        }
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error occurred'
-        };
-      }
+  server.tool(
+    "get_export_exa",
+    "Get details of a specific export job. NOTE: Export API is not yet available.",
+    getExportSchema.shape,
+    async (args) => {
+      // Export API not yet implemented by Exa
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            available: false,
+            feature: 'Webset Exports',
+            message: 'Export functionality is not yet available in the Exa Websets API.',
+            requestedExportId: args.exportId,
+            alternatives: [
+              'Use list_webset_items_exa to fetch items directly',
+              'Use get_webset_item_exa for individual item details'
+            ],
+            documentation: 'https://docs.exa.ai/websets/api/overview'
+          }, null, 2)
+        }]
+      };
     }
-  });
+  );
 
   // List Exports
-  server.addTool({
-    name: "list_exports_exa",
-    description: "List all export jobs for a webset",
-    inputSchema: listExportsSchema,
-    handler: async (args) => {
-      try {
-        const { websetId, limit, cursor } = args;
-        const endpoint = API_CONFIG.ENDPOINTS.WEBSET_EXPORTS.replace(':websetId', websetId);
-        
-        const params: Record<string, any> = { limit };
-        if (cursor) params.cursor = cursor;
-        
-        const response = await axios.get<PaginatedList<Export>>(
-          `${API_CONFIG.BASE_URL}${endpoint}`,
-          {
-            headers: {
-              'accept': 'application/json',
-              'x-api-key': config?.exaApiKey || process.env.EXA_API_KEY || ''
-            },
-            params
-          }
-        );
-        
-        return {
-          success: true,
-          data: response.data.data,
-          hasMore: response.data.hasMore,
-          nextCursor: response.data.nextCursor,
-          summary: {
-            total: response.data.data.length,
-            completed: response.data.data.filter(e => e.status === 'completed').length,
-            pending: response.data.data.filter(e => e.status === 'pending').length,
-            processing: response.data.data.filter(e => e.status === 'processing').length,
-            failed: response.data.data.filter(e => e.status === 'failed').length
-          }
-        };
-      } catch (error) {
-        if (isAxiosError(error)) {
-          return {
-            success: false,
-            error: error.response?.data?.error || error.message,
-            details: error.response?.data
-          };
-        }
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error occurred'
-        };
-      }
+  server.tool(
+    "list_exports_exa",
+    "List all export jobs for a webset. NOTE: Export API is not yet available.",
+    listExportsSchema.shape,
+    async (args) => {
+      // Export API not yet implemented by Exa
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            available: false,
+            feature: 'Webset Exports',
+            message: 'Export functionality is not yet available in the Exa Websets API.',
+            requestedWebsetId: args.websetId,
+            alternatives: [
+              'Use list_webset_items_exa to access webset items directly'
+            ],
+            documentation: 'https://docs.exa.ai/websets/api/overview'
+          }, null, 2)
+        }]
+      };
     }
-  });
+  );
 
   // Delete Export
-  server.addTool({
-    name: "delete_export_exa",
-    description: "Delete an export job and its associated files",
-    inputSchema: deleteExportSchema,
-    handler: async (args) => {
-      try {
-        const endpoint = API_CONFIG.ENDPOINTS.WEBSET_EXPORT_BY_ID
-          .replace(':websetId', args.websetId)
-          .replace(':exportId', args.exportId);
-        
-        await axios.delete(
-          `${API_CONFIG.BASE_URL}${endpoint}`,
-          {
-            headers: {
-              'accept': 'application/json',
-              'x-api-key': config?.exaApiKey || process.env.EXA_API_KEY || ''
-            }
-          }
-        );
-        
-        return {
-          success: true,
-          message: 'Export deleted successfully'
-        };
-      } catch (error) {
-        if (isAxiosError(error)) {
-          return {
-            success: false,
-            error: error.response?.data?.error || error.message,
-            details: error.response?.data
-          };
-        }
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error occurred'
-        };
-      }
+  server.tool(
+    "delete_export_exa",
+    "Delete an export job. NOTE: Export API is not yet available.",
+    deleteExportSchema.shape,
+    async (args) => {
+      // Export API not yet implemented by Exa
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            available: false,
+            feature: 'Webset Exports',
+            message: 'Export functionality is not yet available in the Exa Websets API.',
+            requestedExportId: args.exportId,
+            documentation: 'https://docs.exa.ai/websets/api/overview'
+          }, null, 2)
+        }]
+      };
     }
-  });
+  );
 }

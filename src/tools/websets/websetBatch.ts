@@ -46,11 +46,11 @@ const batchVerifyItemsSchema = z.object({
 
 export function registerWebsetBatchTools(server: McpServer, config: any) {
   // Update Single Item
-  server.addTool({
-    name: "update_webset_item_exa",
-    description: "Update a single webset item's metadata, verification status, or custom fields",
-    inputSchema: updateItemSchema,
-    handler: async (args) => {
+  server.tool(
+    "update_webset_item_exa",
+    "Update a single webset item's metadata, verification status, or custom fields",
+    updateItemSchema.shape,
+    async (args) => {
       try {
         const { websetId, itemId, ...updateData } = args;
         const endpoint = API_CONFIG.ENDPOINTS.WEBSET_ITEM_BY_ID
@@ -76,32 +76,49 @@ export function registerWebsetBatchTools(server: McpServer, config: any) {
         );
         
         return {
-          success: true,
-          data: response.data,
-          message: 'Item updated successfully'
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              success: true,
+              data: response.data,
+              message: 'Item updated successfully'
+            }, null, 2)
+          }]
         };
       } catch (error) {
         if (isAxiosError(error)) {
           return {
-            success: false,
-            error: error.response?.data?.error || error.message,
-            details: error.response?.data
+            content: [{
+              type: 'text' as const,
+              text: JSON.stringify({
+                success: false,
+                error: error.response?.data?.error || error.message,
+                details: error.response?.data
+              }, null, 2)
+            }],
+            isError: true
           };
         }
         return {
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error occurred'
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              success: false,
+              error: error instanceof Error ? error.message : 'Unknown error occurred'
+            }, null, 2)
+          }],
+          isError: true
         };
       }
     }
-  });
+  );
 
   // Batch Update Items
-  server.addTool({
-    name: "batch_update_items_exa",
-    description: "Update multiple webset items at once with the same changes",
-    inputSchema: batchUpdateItemsSchema,
-    handler: async (args) => {
+  server.tool(
+    "batch_update_items_exa",
+    "Update multiple webset items at once with the same changes",
+    batchUpdateItemsSchema.shape,
+    async (args) => {
       try {
         const { websetId, itemIds, updates } = args;
         const endpoint = `${API_CONFIG.ENDPOINTS.WEBSET_ITEMS}/batch-update`
@@ -125,32 +142,49 @@ export function registerWebsetBatchTools(server: McpServer, config: any) {
         );
         
         return {
-          success: true,
-          data: response.data,
-          message: `Successfully updated ${itemIds.length} items`
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              success: true,
+              data: response.data,
+              message: `Successfully updated ${itemIds.length} items`
+            }, null, 2)
+          }]
         };
       } catch (error) {
         if (isAxiosError(error)) {
           return {
-            success: false,
-            error: error.response?.data?.error || error.message,
-            details: error.response?.data
+            content: [{
+              type: 'text' as const,
+              text: JSON.stringify({
+                success: false,
+                error: error.response?.data?.error || error.message,
+                details: error.response?.data
+              }, null, 2)
+            }],
+            isError: true
           };
         }
         return {
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error occurred'
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              success: false,
+              error: error instanceof Error ? error.message : 'Unknown error occurred'
+            }, null, 2)
+          }],
+          isError: true
         };
       }
     }
-  });
+  );
 
   // Batch Delete Items
-  server.addTool({
-    name: "batch_delete_items_exa",
-    description: "Delete multiple webset items at once",
-    inputSchema: batchDeleteItemsSchema,
-    handler: async (args) => {
+  server.tool(
+    "batch_delete_items_exa",
+    "Delete multiple webset items at once",
+    batchDeleteItemsSchema.shape,
+    async (args) => {
       try {
         const { websetId, itemIds } = args;
         const endpoint = `${API_CONFIG.ENDPOINTS.WEBSET_ITEMS}/batch-delete`
@@ -173,32 +207,49 @@ export function registerWebsetBatchTools(server: McpServer, config: any) {
         );
         
         return {
-          success: true,
-          data: response.data,
-          message: `Successfully deleted ${itemIds.length} items`
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              success: true,
+              data: response.data,
+              message: `Successfully deleted ${itemIds.length} items`
+            }, null, 2)
+          }]
         };
       } catch (error) {
         if (isAxiosError(error)) {
           return {
-            success: false,
-            error: error.response?.data?.error || error.message,
-            details: error.response?.data
+            content: [{
+              type: 'text' as const,
+              text: JSON.stringify({
+                success: false,
+                error: error.response?.data?.error || error.message,
+                details: error.response?.data
+              }, null, 2)
+            }],
+            isError: true
           };
         }
         return {
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error occurred'
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              success: false,
+              error: error instanceof Error ? error.message : 'Unknown error occurred'
+            }, null, 2)
+          }],
+          isError: true
         };
       }
     }
-  });
+  );
 
   // Batch Verify Items
-  server.addTool({
-    name: "batch_verify_items_exa",
-    description: "Verify or update verification status for multiple items at once",
-    inputSchema: batchVerifyItemsSchema,
-    handler: async (args) => {
+  server.tool(
+    "batch_verify_items_exa",
+    "Verify or update verification status for multiple items at once",
+    batchVerifyItemsSchema.shape,
+    async (args) => {
       try {
         const { websetId, itemIds, status, reasoning } = args;
         const endpoint = `${API_CONFIG.ENDPOINTS.WEBSET_ITEMS}/batch-verify`
@@ -225,23 +276,40 @@ export function registerWebsetBatchTools(server: McpServer, config: any) {
         );
         
         return {
-          success: true,
-          data: response.data,
-          message: `Successfully updated verification status for ${itemIds.length} items`
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              success: true,
+              data: response.data,
+              message: `Successfully updated verification status for ${itemIds.length} items`
+            }, null, 2)
+          }]
         };
       } catch (error) {
         if (isAxiosError(error)) {
           return {
-            success: false,
-            error: error.response?.data?.error || error.message,
-            details: error.response?.data
+            content: [{
+              type: 'text' as const,
+              text: JSON.stringify({
+                success: false,
+                error: error.response?.data?.error || error.message,
+                details: error.response?.data
+              }, null, 2)
+            }],
+            isError: true
           };
         }
         return {
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error occurred'
+          content: [{
+            type: 'text' as const,
+            text: JSON.stringify({
+              success: false,
+              error: error instanceof Error ? error.message : 'Unknown error occurred'
+            }, null, 2)
+          }],
+          isError: true
         };
       }
     }
-  });
+  );
 }

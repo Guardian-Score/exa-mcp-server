@@ -4,6 +4,20 @@
 
 A Model Context Protocol (MCP) server lets AI assistants like Claude use the Exa AI Search API for web searches. This setup allows AI models to get real-time web information in a safe and controlled way.
 
+## 📊 Websets API Status
+
+**43 Working Tools** | Export API unavailable (returns helpful guidance messages)
+
+This server provides access to the complete Exa Websets API with the following features:
+- ✅ Webset creation, management, and search
+- ✅ Item listing, filtering (by sourceId), and retrieval
+- ✅ Enrichment and monitor management  
+- ✅ Webhook and event handling
+- ✅ Batch operations
+- 🚧 Export functionality (API not yet implemented - see [API_LIMITATIONS.md](./API_LIMITATIONS.md))
+
+For details on API limitations and workarounds, see **[API_LIMITATIONS.md](./API_LIMITATIONS.md)**.
+
 ## Remote Exa MCP 🌐
 
 Connect directly to Exa's hosted MCP server (instead of running it locally).
