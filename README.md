@@ -1,22 +1,55 @@
 # Exa MCP Server 🔍
+[![Install in Cursor](https://img.shields.io/badge/Install_in-Cursor-000000?style=flat-square&logoColor=white)](https://cursor.com/en/install-mcp?name=exa&config=eyJuYW1lIjoiZXhhIiwidHlwZSI6Imh0dHAiLCJ1cmwiOiJodHRwczovL21jcC5leGEuYWkvbWNwIn0=)
+[![Install in VS Code](https://img.shields.io/badge/Install_in-VS_Code-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=exa&config=%7B%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fmcp.exa.ai%2Fmcp%22%7D)
 [![npm version](https://badge.fury.io/js/exa-mcp-server.svg)](https://www.npmjs.com/package/exa-mcp-server)
 [![smithery badge](https://smithery.ai/badge/exa)](https://smithery.ai/server/exa)
 
-A Model Context Protocol (MCP) server lets AI assistants like Claude use the Exa AI Search API for web searches. This setup allows AI models to get real-time web information in a safe and controlled way.
+## Exa Code: fast, efficient web context for coding agents
 
-## 📊 Websets API Status
+Vibe coding should never have a bad vibe. `exa-code` is a huge step towards coding agents that never hallucinate.
 
-**43 Working Tools** | Export API unavailable (returns helpful guidance messages)
+When your coding agent makes a search query, `exa-code` searches over billions
+of Github repos, docs pages, Stackoverflow posts, and more, to find the perfect, token-efficient context that the agent needs to code correctly. It's powered by the Exa search engine.
 
-This server provides access to the complete Exa Websets API with the following features:
-- ✅ Webset creation, management, and search
-- ✅ Item listing, filtering (by sourceId), and retrieval
-- ✅ Enrichment and monitor management  
-- ✅ Webhook and event handling
-- ✅ Batch operations
-- 🚧 Export functionality (API not yet implemented - see [API_LIMITATIONS.md](./API_LIMITATIONS.md))
+Examples of queries you can make with `exa-code`:
+* use Exa search in python and make sure content is always livecrawled
+* use correct syntax for vercel ai sdk to call gpt-5 nano asking it how are you
+* how to set up a reproducible Nix Rust development environment
 
-For details on API limitations and workarounds, see **[API_LIMITATIONS.md](./API_LIMITATIONS.md)**.
+**✨ Works with Cursor and Claude Code!** Use the HTTP-based configuration format:
+
+```json
+{
+  "mcpServers": {
+    "exa": {
+      "type": "http",
+      "url": "https://mcp.exa.ai/mcp",
+      "headers": {}
+    }
+  }
+}
+```
+
+You can enable specific tool(s) using the `tools` parameter (if multiple, then with a comma-separated list):
+```
+https://mcp.exa.ai/mcp?tools=web_search_exa,get_code_context_exa
+```
+
+Or enable all tools:
+```
+https://mcp.exa.ai/mcp?tools=web_search_exa,get_code_context_exa,crawling_exa,company_research_exa,linkedin_search_exa,deep_researcher_start,deep_researcher_check
+```
+
+You may include your exa api key in the url like this:
+```
+https://mcp.exa.ai/mcp?exaApiKey=YOUREXAKEY
+```
+
+**Note:** By default, only `web_search_exa` and `get_code_context_exa` are enabled. Add other tools as needed using the `tools` parameter.
+
+---
+
+A Model Context Protocol (MCP) server that connects AI assistants like Claude to Exa AI's search capabilities, including web search, research tools, and our new code search feature.
 
 ## Remote Exa MCP 🌐
 
@@ -25,10 +58,8 @@ Connect directly to Exa's hosted MCP server (instead of running it locally).
 ### Remote Exa MCP URL
 
 ```
-https://mcp.exa.ai/mcp?exaApiKey=your-exa-api-key
+https://mcp.exa.ai/mcp
 ```
-
-Replace `your-api-key-here` with your actual Exa API key from [dashboard.exa.ai/api-keys](https://dashboard.exa.ai/api-keys).
 
 ### Claude Desktop Configuration for Remote MCP
 
@@ -42,12 +73,66 @@ Add this to your Claude Desktop configuration file:
       "args": [
         "-y",
         "mcp-remote",
-        "https://mcp.exa.ai/mcp?exaApiKey=your-exa-api-key"
+        "https://mcp.exa.ai/mcp"
       ]
     }
   }
 }
 ```
+
+### Cursor and Claude Code Configuration for Remote MCP
+
+For Cursor and Claude Code, use this HTTP-based configuration format:
+
+```json
+{
+  "mcpServers": {
+    "exa": {
+      "type": "http",
+      "url": "https://mcp.exa.ai/mcp",
+      "headers": {}
+    }
+  }
+}
+```
+
+### Codex Configuration for Remote MCP
+
+Open your Codex configuration file:
+
+```bash
+code ~/.codex/config.toml
+```
+
+Add this configuration:
+
+```toml
+[mcp_servers.exa]
+command = "npx"
+args = ["-y", "mcp-remote", "https://mcp.exa.ai/mcp"]
+env = { EXA_API_KEY = "your-api-key-here" }
+```
+
+Replace `your-api-key-here` with your actual Exa API key from [dashboard.exa.ai/api-keys](https://dashboard.exa.ai/api-keys).
+
+### Claude Code Plugin
+
+The easiest way to get started with Exa in Claude Code, using plugins:
+
+```bash
+# Add the Exa marketplace
+/plugin marketplace add exa-labs/exa-mcp-server
+
+# Install the plugin
+/plugin install exa-mcp-server
+```
+
+Then set your API key:
+```bash
+export EXA_API_KEY="your-api-key-here"
+```
+
+Get your API key from [dashboard.exa.ai/api-keys](https://dashboard.exa.ai/api-keys).
 
 ### NPM Installation
 
@@ -55,13 +140,18 @@ Add this to your Claude Desktop configuration file:
 npm install -g exa-mcp-server
 ```
 
-### Using Smithery
-
-To install the Exa MCP server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/exa):
+### Using Claude Code
 
 ```bash
-npx -y @smithery/cli install exa --client claude
+claude mcp add exa -e EXA_API_KEY=YOUR_API_KEY -- npx -y exa-mcp-server
 ```
+
+### Using Exa MCP through Smithery
+
+To install the Exa MCP server via [Smithery](https://smithery.ai/server/exa), head over to:
+
+[smithery.ai/server/exa](https://smithery.ai/server/exa)
+
 
 ## Configuration ⚙️
 
@@ -111,127 +201,21 @@ Replace `your-api-key-here` with your actual Exa API key from [dashboard.exa.ai/
 
 ### 3. Available Tools & Tool Selection
 
-The Exa MCP server includes the following tools, which can be enabled by adding the `--tools`:
+The Exa MCP server includes powerful tools for developers and researchers:
 
-#### Core Search & Content Tools
-- **web_search_exa**: Advanced web search with semantic understanding. Supports filtering by date, domain, content type, and includes full text extraction, highlights, and AI summaries.
-- **get_contents_exa**: Retrieve full content from specific URLs with advanced extraction options. Supports batch processing, live crawling, subpage extraction, and various content formats.
-- **find_similar_exa**: Find pages semantically similar to a given URL. Perfect for competitor analysis, finding related research papers, or building recommendation systems.
-- **answer_with_citations_exa**: Generate direct answers to questions with citations from web sources. Uses AI to search, analyze, and provide accurate answers backed by reliable sources.
-- **deep_research_exa**: Conduct comprehensive research on any topic with structured output. Performs deep web analysis, synthesizes information from multiple sources, and generates detailed reports.
-- **check_research_status_exa**: Check the status of previously initiated deep research tasks.
 
-#### Specialized Search Tools
-- **research_paper_search**: Specialized search focused on academic papers and research content.
+#### 🌐 **Tools**
+- **get_code_context_exa**: Search and get relevant code snippets, examples, and documentation from open source libraries, GitHub repositories, and programming frameworks. Perfect for finding up-to-date code documentation, implementation examples, API usage patterns, and best practices from real codebases.
+- **web_search_exa**: Performs real-time web searches with optimized results and content extraction.
 - **company_research**: Comprehensive company research tool that crawls company websites to gather detailed information about businesses.
-- **crawling**: Legacy tool for extracting content from specific URLs (consider using get_contents_exa for more features).
-- **competitor_finder**: Identifies competitors of a company by searching for businesses offering similar products or services.
+- **crawling**: Extracts content from specific URLs, useful for reading articles, PDFs, or any web page when you have the exact URL.
 - **linkedin_search**: Search LinkedIn for companies and people using Exa AI. Simply include company names, person names, or specific LinkedIn URLs in your query.
-- **wikipedia_search_exa**: Search and retrieve information from Wikipedia articles on specific topics, giving you accurate, structured knowledge from the world's largest encyclopedia.
-- **github_search**: Search GitHub repositories using Exa AI - performs real-time searches on GitHub.com to find relevant repositories, issues, and GitHub accounts.
+- **deep_researcher_start**: Start a smart AI researcher for complex questions. The AI will search the web, read many sources, and think deeply about your question to create a detailed research report.
+- **deep_researcher_check**: Check if your research is ready and get the results. Use this after starting a research task to see if it's done and get your comprehensive report.
 
-#### Websets API Tools
-The Exa MCP server now includes comprehensive support for the Websets API, enabling advanced targeted search, data enrichment, and monitoring capabilities. Tools are organized by common B2B sales and marketing workflows:
+**Note:** By default, only `web_search_exa` and `get_code_context_exa` are enabled. You can enable additional tools using the `tools=` parameter (see examples below).
 
-##### 🎯 Core Discovery Tools (Used Daily)
-These are the most frequently used tools for finding and managing leads:
-- **create_webset_exa**: Start lead discovery with search criteria (e.g., "Find CTOs at B2B SaaS companies")
-- **list_webset_items_exa**: View all discovered leads with their data
-- **get_webset_item_exa**: Deep dive into specific prospects
-- **list_websets_exa**: Manage all your websets
-- **get_webset_exa**: Check webset status and progress
-- **search_webset_items_exa**: Filter items by type, verification status, or custom criteria
-
-##### 📧 Enrichment Tools (Critical for Outreach)
-Add contact information and additional data to your leads:
-- **create_webset_enrichment_exa**: Add enrichments (emails, phones, LinkedIn profiles, company data)
-- **list_webset_enrichments_exa**: Monitor enrichment progress
-- **get_webset_enrichment_exa**: Check enrichment details
-- **delete_webset_enrichment_exa**: Remove unnecessary enrichments
-- **cancel_webset_enrichment_exa**: Stop running enrichments
-
-##### 📥 Import & Automation Tools (High-Value Workflows)
-Import existing data and set up automated monitoring:
-- **create_import_exa**: Import CSV/JSON data (e.g., conference attendee lists)
-- **get_import_exa**: Check import status
-- **create_webset_monitor_exa**: Set up daily/weekly automated searches
-- **update_webset_monitor_exa**: Adjust monitor settings
-- **create_webhook_exa**: Get real-time notifications
-- **list_webhook_attempts_exa**: Debug webhook delivery
-
-##### 🔧 Search & Data Management Tools
-Fine-tune searches and manage your data:
-- **create_webset_search_exa**: Add new searches to existing websets
-- **get_webset_search_exa**: Check search progress
-- **list_webset_searches_exa**: View all searches
-- **cancel_webset_search_exa**: Stop unnecessary searches
-- **update_webset_exa**: Add tags and metadata for organization
-- **delete_webset_exa**: Remove old websets
-- **delete_webset_item_exa**: Remove duplicate or irrelevant items
-- **cancel_webset_exa**: Cancel all operations for a webset
-
-##### 📊 System Monitoring Tools
-Track what's happening in your system:
-- **list_events_exa**: Monitor all system events
-- **get_event_exa**: Get detailed event information
-
-##### 📤 Export Tools
-Export your data in various formats:
-- **create_export_exa**: Export webset items to CSV/JSON/XLSX
-- **get_export_exa**: Check export status and get download URL
-- **list_exports_exa**: List all export jobs
-- **delete_export_exa**: Delete export files
-
-##### 🔧 Advanced Features
-
-**Batch Operations:**
-- **update_webset_item_exa**: Update single item metadata and verification
-- **batch_update_items_exa**: Update multiple items at once
-- **batch_delete_items_exa**: Delete multiple items efficiently
-- **batch_verify_items_exa**: Bulk verify items
-
-**Enhanced Webhook Management:**
-- **get_webhook_exa**: Get webhook details
-- **list_webhooks_exa**: List all webhooks
-- **update_webhook_exa**: Update webhook configuration
-- **delete_webhook_exa**: Remove webhooks
-
-**Complete Monitor Management:**
-- **get_webset_monitor_exa**: Get monitor details
-- **list_webset_monitors_exa**: List all monitors for a webset
-- **delete_webset_monitor_exa**: Delete monitors
-- **list_monitor_runs_exa**: View monitor run history
-- **get_monitor_run_exa**: Get specific run details
-
-**Import Management:**
-- **list_imports_exa**: List all import jobs
-- **update_import_exa**: Cancel running imports
-- **delete_import_exa**: Delete import data
-
-**Advanced Filtering:**
-All list operations now support advanced filtering:
-- Filter by type, verification status, enrichment status
-- Date range filters (createdAfter, createdBefore, updatedAfter, updatedBefore)
-- Metadata filters
-- Pattern matching for URLs and titles
-
-#### Common Workflow Examples
-
-**Lead Discovery Flow:**
-1. `create_webset_exa` with your ideal customer profile
-2. `create_webset_enrichment_exa` to add emails
-3. `list_webset_items_exa` to get your enriched leads
-
-**Monitoring Flow:**
-1. `create_webset_exa` for your monitoring criteria
-2. `create_webset_monitor_exa` with daily cadence
-3. `create_webhook_exa` to get notified of new leads
-
-See [Websets Workflows Guide](docs/WEBSETS_WORKFLOWS.md) for detailed workflow examples.
-
-You can choose which tools to enable by adding the `--tools` parameter to your Claude Desktop configuration:
-
-#### Specify which tools to enable:
+#### 💻 **Setup for Code Search Only** (Recommended for Developers)
 
 ```json
 {
@@ -241,7 +225,7 @@ You can choose which tools to enable by adding the `--tools` parameter to your C
       "args": [
         "-y",
         "exa-mcp-server",
-        "--tools=web_search_exa,get_contents_exa,find_similar_exa,answer_with_citations_exa,deep_research_exa,check_research_status_exa,research_paper_search,company_research,crawling,competitor_finder,linkedin_search,wikipedia_search_exa,github_search"
+        "tools=get_code_context_exa"
       ],
       "env": {
         "EXA_API_KEY": "your-api-key-here"
@@ -251,7 +235,9 @@ You can choose which tools to enable by adding the `--tools` parameter to your C
 }
 ```
 
-For enabling multiple tools, use a comma-separated list:
+#### Enable All Tools:
+
+You can either enable all tools or any specfic tools. Use a comma-separated list to enable the tools you need:
 
 ```json
 {
@@ -261,7 +247,7 @@ For enabling multiple tools, use a comma-separated list:
       "args": [
         "-y",
         "exa-mcp-server",
-        "--tools=web_search_exa,get_contents_exa,find_similar_exa,answer_with_citations_exa,deep_research_exa,check_research_status_exa,research_paper_search,company_research,crawling,competitor_finder,linkedin_search,wikipedia_search_exa,github_search"
+        "tools=get_code_context_exa,web_search_exa,company_research_exa,crawling_exa,linkedin_search_exa,deep_researcher_start,deep_researcher_check"
       ],
       "env": {
         "EXA_API_KEY": "your-api-key-here"
@@ -270,93 +256,21 @@ For enabling multiple tools, use a comma-separated list:
   }
 }
 ```
-
-#### Example: Enabling Websets API Tools by Workflow
-
-**For Lead Discovery & Enrichment (Most Common):**
-```json
-{
-  "mcpServers": {
-    "exa": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "exa-mcp-server",
-        "--tools=create_webset_exa,list_webset_items_exa,get_webset_item_exa,create_webset_enrichment_exa,list_websets_exa,search_webset_items_exa"
-      ],
-      "env": {
-        "EXA_API_KEY": "your-api-key-here"
-      }
-    }
-  }
-}
-```
-
-**For Import & Monitoring Workflows:**
-```json
-{
-  "mcpServers": {
-    "exa": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "exa-mcp-server",
-        "--tools=create_import_exa,create_webset_monitor_exa,create_webhook_exa,list_events_exa"
-      ],
-      "env": {
-        "EXA_API_KEY": "your-api-key-here"
-      }
-    }
-  }
-}
-```
-
-If you don't specify any tools, all tools enabled by default will be used.
-
-### 4. Restart Claude Desktop
-
-For the changes to take effect:
-
-1. Completely quit Claude Desktop (not just close the window)
-2. Start Claude Desktop again
-3. Look for the icon to verify the Exa server is connected
 
 ## Using via NPX
 
 If you prefer to run the server directly, you can use npx:
 
 ```bash
-# Run with all tools enabled by default
+# Run with default tools only (web_search_exa and get_code_context_exa)
 npx exa-mcp-server
 
 # Enable specific tools only
-npx exa-mcp-server --tools=web_search_exa
+npx exa-mcp-server tools=web_search_exa
 
-# Enable multiple tools
-npx exa-mcp-server --tools=web_search_exa,research_paper_search
-
-# List all available tools
-npx exa-mcp-server --list-tools
+# All tools
+npx exa-mcp-server tools=web_search_exa,get_code_context_exa,crawling_exa,company_research_exa,linkedin_search_exa,deep_researcher_start,deep_researcher_check
 ```
-
-## Troubleshooting 🔧
-
-### Common Issues
-
-1. **Server Not Found**
-   * Verify the npm link is correctly set up
-   * Check Claude Desktop configuration syntax (json file)
-
-2. **API Key Issues**
-   * Confirm your EXA_API_KEY is valid
-   * Check the EXA_API_KEY is correctly set in the Claude Desktop config
-   * Verify no spaces or quotes around the API key
-
-3. **Connection Issues**
-   * Restart Claude Desktop completely
-   * Check Claude Desktop logs:
-
-<br>
 
 ---
 

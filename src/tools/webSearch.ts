@@ -8,62 +8,27 @@ import { createRequestLogger } from "../utils/logger.js";
 export function registerWebSearchTool(server: McpServer, config?: { exaApiKey?: string }): void {
   server.tool(
     "web_search_exa",
-    "Advanced web search using Exa AI with semantic understanding. Supports real-time searches, content extraction, filtering by date/domain, and intelligent result ranking. Returns full text content, highlights, and summaries.",
+    "Search the web using Exa AI - performs real-time web searches and can scrape content from specific URLs. Supports configurable result counts and returns the content from the most relevant websites.",
     {
-      query: z.string().describe("Search query - can be natural language or keywords"),
-      numResults: z.number().optional().describe("Number of results to return (default: 5, max: 100)"),
-      type: z.enum(['neural', 'keyword', 'auto']).optional().describe("Search type: neural for semantic, keyword for exact match, auto for automatic selection (default: auto)"),
-      category: z.enum(['company', 'research paper', 'news', 'pdf', 'github', 'tweet', 'personal site', 'linkedin profile', 'financial report']).optional().describe("Filter results by content type"),
-      includeDomains: z.array(z.string()).optional().describe("Only include results from these domains"),
-      excludeDomains: z.array(z.string()).optional().describe("Exclude results from these domains"),
-      startPublishedDate: z.string().optional().describe("Filter by publication date (ISO 8601 format, e.g., 2024-01-01)"),
-      endPublishedDate: z.string().optional().describe("End date for publication filter (ISO 8601 format)"),
-      startCrawlDate: z.string().optional().describe("Filter by when page was crawled (ISO 8601 format)"),
-      endCrawlDate: z.string().optional().describe("End date for crawl filter (ISO 8601 format)"),
-      includeText: z.string().optional().describe("Only include results containing this text"),
-      excludeText: z.string().optional().describe("Exclude results containing this text"),
-      useAutoprompt: z.boolean().optional().describe("Let Exa optimize the query automatically (default: true)"),
-      contents: z.object({
-        text: z.union([
-          z.boolean(),
-          z.object({
-            maxCharacters: z.number().optional().describe("Maximum characters to return per result (default: 3000)"),
-            includeHtmlTags: z.boolean().optional().describe("Include HTML tags in text content")
-          })
-        ]).optional().describe("Extract full text content from pages"),
-        highlights: z.union([
-          z.boolean(),
-          z.object({
-            numSentences: z.number().optional().describe("Number of highlight sentences (default: 3)"),
-            highlightsPerUrl: z.number().optional().describe("Number of highlights per URL"),
-            query: z.string().optional().describe("Custom query for highlights")
-          })
-        ]).optional().describe("Extract relevant text snippets"),
-        summary: z.union([
-          z.boolean(),
-          z.object({
-            query: z.string().optional().describe("Custom query for summary generation")
-          })
-        ]).optional().describe("Generate AI summaries of content"),
-        livecrawl: z.enum(['always', 'fallback', 'preferred', 'never']).optional().describe("Live crawling behavior (default: preferred)"),
-        subpages: z.object({
-          max: z.number().optional().describe("Maximum subpages to crawl (default: 0)"),
-          includePatterns: z.array(z.string()).optional().describe("URL patterns to include when crawling subpages"),
-          excludePatterns: z.array(z.string()).optional().describe("URL patterns to exclude when crawling subpages")
-        }).optional().describe("Crawl and include subpages"),
-        extras: z.object({
-          links: z.boolean().optional().describe("Extract all links from the page"),
-          imageLinks: z.boolean().optional().describe("Extract all image links from the page")
-        }).optional().describe("Additional metadata to extract")
-      }).optional().describe("Content extraction options")
+      query: z.string().describe("Websearch query"),
+      numResults: z.number().optional().describe("Number of search results to return (default: 8)"),
+      livecrawl: z.enum(['fallback', 'preferred']).optional().describe("Live crawl mode - 'fallback': use live crawling as backup if cached content unavailable, 'preferred': prioritize live crawling (default: 'fallback')"),
+      type: z.enum(['auto', 'fast', 'deep']).optional().describe("Search type - 'auto': balanced search (default), 'fast': quick results, 'deep': comprehensive search"),
+      contextMaxCharacters: z.number().optional().describe("Maximum characters for context string optimized for LLMs (default: 10000)")
     },
-    async (args) => {
+    {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true
+    },
+    async ({ query, numResults, livecrawl, type, contextMaxCharacters }) => {
       const requestId = `web_search_exa-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
       const logger = createRequestLogger(requestId, 'web_search_exa');
       
-      logger.start(args.query);
+      logger.start(query);
       
       try {
+        // Create a fresh axios instance for each request
         const axiosInstance = axios.create({
           baseURL: API_CONFIG.BASE_URL,
           headers: {
@@ -71,142 +36,48 @@ export function registerWebSearchTool(server: McpServer, config?: { exaApiKey?: 
             'content-type': 'application/json',
             'x-api-key': config?.exaApiKey || process.env.EXA_API_KEY || ''
           },
-          timeout: API_CONFIG.REQUEST_TIMEOUT
+          timeout: 25000
         });
 
-        // Build the search request with all parameters
         const searchRequest: ExaSearchRequest = {
-          query: args.query,
-          type: args.type || 'auto',
-          numResults: args.numResults || API_CONFIG.DEFAULT_NUM_RESULTS,
-          ...(args.category && { category: args.category }),
-          ...(args.includeDomains && { includeDomains: args.includeDomains }),
-          ...(args.excludeDomains && { excludeDomains: args.excludeDomains }),
-          ...(args.startPublishedDate && { startPublishedDate: args.startPublishedDate }),
-          ...(args.endPublishedDate && { endPublishedDate: args.endPublishedDate }),
-          ...(args.startCrawlDate && { startCrawlDate: args.startCrawlDate }),
-          ...(args.endCrawlDate && { endCrawlDate: args.endCrawlDate }),
-          ...(args.includeText && { includeText: args.includeText }),
-          ...(args.excludeText && { excludeText: args.excludeText })
+          query,
+          type: type || "auto",
+          numResults: numResults || API_CONFIG.DEFAULT_NUM_RESULTS,
+          contents: {
+            text: true,
+            context: {
+              maxCharacters: contextMaxCharacters || 10000
+            },
+            livecrawl: livecrawl || 'fallback'
+          }
         };
-
-        // Build content options if provided
-        if (args.contents) {
-          const contentOptions: any = {};
-          
-          // Handle text extraction
-          if (args.contents.text !== undefined) {
-            if (typeof args.contents.text === 'boolean') {
-              contentOptions.text = args.contents.text;
-            } else {
-              contentOptions.text = {
-                maxCharacters: args.contents.text.maxCharacters || API_CONFIG.DEFAULT_MAX_CHARACTERS,
-                ...(args.contents.text.includeHtmlTags !== undefined && { includeHtmlTags: args.contents.text.includeHtmlTags })
-              };
-            }
-          } else {
-            // Default: include text with default max characters
-            contentOptions.text = { maxCharacters: API_CONFIG.DEFAULT_MAX_CHARACTERS };
-          }
-          
-          // Handle highlights
-          if (args.contents.highlights !== undefined) {
-            if (typeof args.contents.highlights === 'boolean') {
-              contentOptions.highlights = args.contents.highlights;
-            } else {
-              contentOptions.highlights = {
-                numSentences: args.contents.highlights.numSentences || API_CONFIG.DEFAULT_HIGHLIGHTS_SENTENCES,
-                ...(args.contents.highlights.highlightsPerUrl && { highlightsPerUrl: args.contents.highlights.highlightsPerUrl }),
-                ...(args.contents.highlights.query && { query: args.contents.highlights.query })
-              };
-            }
-          }
-          
-          // Handle summary
-          if (args.contents.summary !== undefined) {
-            if (typeof args.contents.summary === 'boolean') {
-              contentOptions.summary = args.contents.summary;
-            } else {
-              contentOptions.summary = {
-                ...(args.contents.summary.query && { query: args.contents.summary.query })
-              };
-            }
-          }
-          
-          // Handle livecrawl
-          contentOptions.livecrawl = args.contents.livecrawl || 'preferred';
-          
-          // Handle subpages
-          if (args.contents.subpages) {
-            contentOptions.subpages = {
-              max: args.contents.subpages.max || 0,
-              ...(args.contents.subpages.includePatterns && { includePatterns: args.contents.subpages.includePatterns }),
-              ...(args.contents.subpages.excludePatterns && { excludePatterns: args.contents.subpages.excludePatterns })
-            };
-          }
-          
-          // Handle extras
-          if (args.contents.extras) {
-            contentOptions.extras = {
-              ...(args.contents.extras.links !== undefined && { links: args.contents.extras.links }),
-              ...(args.contents.extras.imageLinks !== undefined && { imageLinks: args.contents.extras.imageLinks })
-            };
-          }
-          
-          searchRequest.contents = contentOptions;
-        } else {
-          // Default content options
-          searchRequest.contents = {
-            text: { maxCharacters: API_CONFIG.DEFAULT_MAX_CHARACTERS },
-            livecrawl: 'preferred'
-          };
-        }
         
-        logger.log(`Sending search request with ${Object.keys(searchRequest).length} parameters`);
+        logger.log("Sending request to Exa API");
         
         const response = await axiosInstance.post<ExaSearchResponse>(
           API_CONFIG.ENDPOINTS.SEARCH,
-          searchRequest
+          searchRequest,
+          { timeout: 25000 }
         );
         
-        logger.log(`Received ${response.data.results?.length || 0} results`);
+        logger.log("Received response from Exa API");
 
-        if (!response.data || !response.data.results) {
-          logger.log("Warning: Empty or invalid response");
+        if (!response.data || !response.data.context) {
+          logger.log("Warning: Empty or invalid response from Exa API");
           return {
             content: [{
               type: "text" as const,
-              text: "No search results found. Please try a different query or adjust your filters."
+              text: "No search results found. Please try a different query."
             }]
           };
         }
 
-        // Format the response for better readability
-        const formattedResults = {
-          requestId: response.data.requestId,
-          query: args.query,
-          type: response.data.resolvedSearchType || args.type || 'auto',
-          autopromptString: response.data.autopromptString,
-          resultsCount: response.data.results.length,
-          results: response.data.results.map((result, index) => ({
-            index: index + 1,
-            title: result.title,
-            url: result.url,
-            publishedDate: result.publishedDate,
-            author: result.author,
-            score: result.score,
-            ...(result.text && { text: result.text }),
-            ...(result.highlights && { highlights: result.highlights }),
-            ...(result.summary && { summary: result.summary }),
-            ...(result.links && { linksCount: result.links.length }),
-            ...(result.imageLinks && { imageLinksCount: result.imageLinks.length })
-          }))
-        };
+        logger.log(`Context received with ${response.data.context.length} characters`);
         
         const result = {
           content: [{
             type: "text" as const,
-            text: JSON.stringify(formattedResults, null, 2)
+            text: response.data.context
           }]
         };
         
@@ -216,10 +87,11 @@ export function registerWebSearchTool(server: McpServer, config?: { exaApiKey?: 
         logger.error(error);
         
         if (axios.isAxiosError(error)) {
+          // Handle Axios errors specifically
           const statusCode = error.response?.status || 'unknown';
           const errorMessage = error.response?.data?.message || error.message;
           
-          logger.log(`API error (${statusCode}): ${errorMessage}`);
+          logger.log(`Axios error (${statusCode}): ${errorMessage}`);
           return {
             content: [{
               type: "text" as const,
@@ -229,6 +101,7 @@ export function registerWebSearchTool(server: McpServer, config?: { exaApiKey?: 
           };
         }
         
+        // Handle generic errors
         return {
           content: [{
             type: "text" as const,
@@ -239,4 +112,4 @@ export function registerWebSearchTool(server: McpServer, config?: { exaApiKey?: 
       }
     }
   );
-}
+} 

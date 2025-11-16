@@ -1,546 +1,160 @@
 // Exa API Types
-
-// Content options shared across multiple endpoints
-export interface ContentOptions {
-  text?: {
-    maxCharacters?: number;
-    includeHtmlTags?: boolean;
-  } | boolean;
-  highlights?: {
-    numSentences?: number;
-    highlightsPerUrl?: number;
-    query?: string;
-  } | boolean;
-  summary?: {
-    query?: string;
-  } | boolean;
-  livecrawl?: 'always' | 'fallback' | 'preferred' | 'never';
-  subpages?: {
-    max?: number;
-    includePatterns?: string[];
-    excludePatterns?: string[];
-  };
-  extras?: {
-    links?: boolean;
-    imageLinks?: boolean;
-  };
-}
-
-// Search Request Types
 export interface ExaSearchRequest {
   query: string;
-  type?: 'neural' | 'keyword' | 'auto';
-  category?: 'company' | 'research paper' | 'news' | 'pdf' | 'github' | 'tweet' | 'personal site' | 'linkedin profile' | 'financial report';
-  numResults?: number;
+  type: 'auto' | 'fast' | 'deep';
+  category?: string;
   includeDomains?: string[];
   excludeDomains?: string[];
-  startCrawlDate?: string;
-  endCrawlDate?: string;
   startPublishedDate?: string;
   endPublishedDate?: string;
-  includeText?: string;
-  excludeText?: string;
-  contents?: ContentOptions;
-}
-
-// Contents Request Types
-export interface ExaContentsRequest {
-  urls: string[];
-  text?: {
-    maxCharacters?: number;
-    includeHtmlTags?: boolean;
-  } | boolean;
-  highlights?: {
-    numSentences?: number;
-    highlightsPerUrl?: number;
-    query?: string;
-  } | boolean;
-  summary?: {
-    query?: string;
-  } | boolean;
-  livecrawl?: 'always' | 'fallback' | 'never';
-  subpages?: {
-    max?: number;
-    includePatterns?: string[];
-    excludePatterns?: string[];
-  };
-  extras?: {
-    links?: boolean;
-    imageLinks?: boolean;
+  numResults: number;
+  contents: {
+    text: {
+      maxCharacters?: number;
+    } | boolean;
+    context?: {
+      maxCharacters?: number;
+    };
+    livecrawl?: 'fallback' | 'preferred';
+    subpages?: number;
+    subpageTarget?: string[];
   };
 }
 
-// Find Similar Request Types
-export interface ExaFindSimilarRequest {
-  url: string;
-  numResults?: number;
-  includeDomains?: string[];
-  excludeDomains?: string[];
-  startCrawlDate?: string;
-  endCrawlDate?: string;
-  startPublishedDate?: string;
-  endPublishedDate?: string;
-  excludeSourceDomain?: boolean;
-  category?: string;
-  contents?: ContentOptions;
-}
-
-// Answer Request Types
-export interface ExaAnswerRequest {
-  query: string;
-  text?: boolean;
-  stream?: boolean;
-  numResults?: number;
-  includeDomains?: string[];
-  excludeDomains?: string[];
-  startCrawlDate?: string;
-  endCrawlDate?: string;
-  startPublishedDate?: string;
-  endPublishedDate?: string;
-  includeText?: string;
-  excludeText?: string;
-  category?: string;
-}
-
-// Research Request Types
-export interface ExaResearchRequest {
-  query: string;
-  outputSchema?: Record<string, any>;
-  llmGenerateSchema?: boolean;
-  report?: boolean;
-  numResults?: number;
-  includeDomains?: string[];
-  excludeDomains?: string[];
-  startPublishedDate?: string;
-  endPublishedDate?: string;
-  category?: string;
-}
-
-// Response Types
-export interface ExaSearchResult {
-  id: string;
-  title: string;
-  url: string;
-  publishedDate?: string;
-  author?: string;
-  text?: string;
-  highlights?: string[];
-  summary?: string;
-  image?: string;
-  favicon?: string;
-  score?: number;
-  links?: string[];
-  imageLinks?: string[];
-}
-
-export interface ExaContentResult {
-  url: string;
-  title?: string;
-  text?: string;
-  highlights?: string[];
-  summary?: string;
-  author?: string;
-  publishedDate?: string;
-  links?: string[];
-  imageLinks?: string[];
-  error?: string;
-  status?: 'success' | 'error';
-}
-
-export interface ExaSearchResponse {
-  requestId: string;
-  autopromptString?: string;
-  resolvedSearchType?: string;
-  results: ExaSearchResult[];
-}
-
-export interface ExaContentsResponse {
-  requestId: string;
-  results: ExaContentResult[];
-  statuses?: Array<{
-    url: string;
-    status: 'success' | 'error';
-    error?: string;
-  }>;
-}
-
-export interface ExaAnswerResponse {
-  requestId: string;
-  answer: string;
-  citations: Array<{
-    title: string;
-    url: string;
-    snippet: string;
-  }>;
-}
-
-export interface ExaResearchResponse {
-  requestId: string;
-  taskId?: string;
-  status?: 'pending' | 'processing' | 'completed' | 'failed';
-  result?: {
-    report?: string;
-    data?: Record<string, any>;
-  };
-  error?: string;
-}
-
-// Legacy types for backward compatibility
 export interface ExaCrawlRequest {
   ids: string[];
   text: boolean;
   livecrawl?: 'always' | 'fallback' | 'preferred';
 }
 
-// Tool Argument Types
+export interface ExaSearchResult {
+  id: string;
+  title: string;
+  url: string;
+  publishedDate: string;
+  author: string;
+  text: string;
+  image?: string;
+  favicon?: string;
+  score?: number;
+}
+
+export interface ExaSearchResponse {
+  requestId: string;
+  autopromptString?: string;
+  resolvedSearchType: string;
+  context?: string;
+  results: ExaSearchResult[];
+}
+
+// Tool Types
 export interface SearchArgs {
   query: string;
   numResults?: number;
-  livecrawl?: 'always' | 'fallback' | 'preferred';
+  livecrawl?: 'fallback' | 'preferred';
+  type?: 'auto' | 'fast' | 'deep';
 }
 
-// ============================================
-// Websets API Types
-// ============================================
-
-// Webset Types
-export interface Webset {
-  id: string;
-  object: 'webset';
-  status: 'created' | 'idle' | 'running' | 'paused' | 'completed' | 'canceled' | 'error';
-  externalId?: string | null;
-  searches?: WebsetSearch[];
-  enrichments?: WebsetEnrichment[];
-  monitors?: Monitor[];
-  imports?: Import[];
-  metadata?: Record<string, string>;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface WebsetItem {
-  id: string;
-  object: 'webset_item';
-  websetId: string;
-  url: string;
-  title?: string | null;
-  content?: string | null;
-  type?: string | null;
-  verification?: {
-    status: 'verified' | 'pending' | 'failed';
-    reasoning?: string | null;
-    references?: string[];
+// Deep Research API Types
+export interface DeepResearchRequest {
+  model: 'exa-research' | 'exa-research-pro';
+  instructions: string;
+  output?: {
+    inferSchema?: boolean;
   };
-  enrichedData?: Record<string, any>;
-  metadata?: Record<string, string>;
-  createdAt: string;
-  updatedAt: string;
 }
 
-export interface WebsetSearch {
+export interface DeepResearchStartResponse {
   id: string;
-  object: 'webset_search';
-  status: 'created' | 'running' | 'completed' | 'canceled' | 'error';
+  outputSchema?: {
+    type: string;
+    properties: any;
+    required: string[];
+    additionalProperties: boolean;
+  };
+}
+
+export interface DeepResearchCheckResponse {
+  id: string;
+  createdAt: number;
+  status: 'running' | 'completed' | 'failed';
+  instructions: string;
+  schema?: {
+    type: string;
+    properties: any;
+    required: string[];
+    additionalProperties: boolean;
+  };
+  data?: {
+    report?: string;
+    [key: string]: any;
+  };
+  operations?: Array<{
+    type: string;
+    stepId: string;
+    text?: string;
+    query?: string;
+    goal?: string;
+    results?: any[];
+    url?: string;
+    thought?: string;
+    data?: any;
+  }>;
+  citations?: {
+    [key: string]: Array<{
+      id: string;
+      url: string;
+      title: string;
+      snippet: string;
+    }>;
+  };
+  timeMs?: number;
+  model?: string;
+  costDollars?: {
+    total: number;
+    research: {
+      searches: number;
+      pages: number;
+      reasoningTokens: number;
+    };
+  };
+}
+
+export interface DeepResearchErrorResponse {
+  response: {
+    message: string;
+    error: string;
+    statusCode: number;
+  };
+  status: number;
+  options: any;
+  message: string;
+  name: string;
+}
+
+// Exa Code API Types
+export interface ExaCodeRequest {
   query: string;
-  entity?: {
-    type: 'company' | 'person' | 'article' | 'research_paper' | 'custom';
-  };
-  criteria?: Criterion[];
-  count?: number;
-  behavior?: 'override' | 'append';
-  progress?: {
-    found: number;
-    completion: number;
-  };
-  metadata?: Record<string, string>;
-  canceledAt?: string | null;
-  canceledReason?: 'user_request' | 'webset_deleted' | 'webset_canceled' | 'error' | 'timeout' | null;
-  createdAt: string;
-  updatedAt: string;
+  tokensNum: number;
+  flags?: string[];
 }
 
-export interface WebsetEnrichment {
+export interface ExaCodeResult {
   id: string;
-  object: 'webset_enrichment';
-  status: 'pending' | 'running' | 'completed' | 'canceled' | 'error';
-  websetId: string;
-  title?: string | null;
-  description: string;
-  format: 'text' | 'date' | 'number' | 'options' | 'email' | 'phone';
-  options?: Array<{ label: string }> | null;
-  instructions?: string | null;
-  metadata?: Record<string, string>;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Import {
-  id: string;
-  object: 'import';
-  status: 'pending' | 'processing' | 'completed' | 'failed' | 'canceled';
-  sourceUrl?: string | null;
-  fileName?: string | null;
-  fileType?: string | null;
-  websetId?: string | null;
-  itemCount?: number | null;
-  errorDetails?: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Monitor {
-  id: string;
-  object: 'monitor';
-  websetId: string;
-  status: 'active' | 'paused' | 'completed' | 'error';
-  cadence: string;
-  query?: string | null;
-  lastRunAt?: string | null;
-  nextRunAt?: string | null;
-  searchBehavior?: 'override' | 'append';
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface MonitorRun {
-  id: string;
-  object: 'monitor_run';
-  monitorId: string;
-  status: 'started' | 'completed' | 'failed';
-  startedAt: string;
-  completedAt?: string | null;
-  itemsFound?: number | null;
-  itemsAdded?: number | null;
-  error?: string | null;
-}
-
-export interface Export {
-  id: string;
-  object: 'export';
-  websetId: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
-  format: 'csv' | 'json' | 'xlsx';
-  downloadUrl?: string | null;
-  expiresAt?: string | null;
-  filters?: {
-    itemIds?: string[];
-    verificationStatus?: 'verified' | 'pending' | 'failed';
-    hasEnrichedData?: boolean;
-    itemType?: string;
-  };
-  itemCount?: number | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Webhook {
-  id: string;
-  object: 'webhook';
+  title: string;
   url: string;
-  events: EventType[];
-  secret?: string;
-  status: 'active' | 'inactive' | 'error';
-  createdAt: string;
-  updatedAt: string;
+  text: string;
+  score?: number;
 }
 
-export interface WebhookAttempt {
-  id: string;
-  object: 'webhook_attempt';
-  eventId: string;
-  eventType: EventType;
-  webhookId: string;
-  url: string;
-  successful: boolean;
-  responseHeaders?: Record<string, string>;
-  responseBody?: string | null;
-  responseStatusCode?: number;
-  attempt: number;
-  attemptedAt: string;
-}
-
-export interface Event {
-  id: string;
-  object: 'event';
-  type: EventType;
-  websetId?: string | null;
-  resourceId?: string | null;
-  data?: Record<string, any>;
-  createdAt: string;
-}
-
-// Input Types for Websets API
-export interface WebsetSearchInput {
+export interface ExaCodeResponse {
+  requestId: string;
   query: string;
-  count?: number;
-  entity?: {
-    type: 'company' | 'person' | 'article' | 'research_paper' | 'custom';
-  };
-  criteria?: CriterionInput[];
-  behavior?: 'override' | 'append';
+  repository?: string;
+  response: string;
+  resultsCount: number;
+  costDollars: string;
+  searchTime: number;
+  outputTokens?: number;
+  traces?: any;
 }
-
-export interface Criterion {
-  description: string;
-}
-
-export interface CriterionInput {
-  description: string;
-}
-
-export interface WebsetEnrichmentInput {
-  description: string;
-  format?: 'text' | 'date' | 'number' | 'options' | 'email' | 'phone';
-  options?: Array<{ label: string }>;
-  metadata?: Record<string, string>;
-}
-
-export interface CreateWebsetInput {
-  search?: WebsetSearchInput;
-  enrichments?: WebsetEnrichmentInput[];
-  externalId?: string | null;
-  metadata?: Record<string, string>;
-}
-
-export interface UpdateWebsetInput {
-  externalId?: string | null;
-  metadata?: Record<string, string>;
-  status?: 'paused' | 'running';
-}
-
-export interface ImportInput {
-  sourceUrl: string;
-  fileType?: 'csv' | 'json' | 'txt';
-  websetId?: string | null;
-  metadata?: Record<string, string>;
-}
-
-export interface UpdateImportInput {
-  status?: 'canceled';
-}
-
-export interface CreateMonitorInput {
-  websetId: string;
-  cadence: 'daily' | 'weekly' | 'monthly' | 'hourly';
-  query?: string | null;
-  searchBehavior?: 'override' | 'append';
-  metadata?: Record<string, string>;
-}
-
-export interface UpdateMonitorInput {
-  cadence?: 'daily' | 'weekly' | 'monthly' | 'hourly';
-  query?: string | null;
-  status?: 'active' | 'paused';
-  searchBehavior?: 'override' | 'append';
-  metadata?: Record<string, string>;
-}
-
-export interface CreateWebhookInput {
-  url: string;
-  events: EventType[];
-  description?: string | null;
-  secret?: string | null;
-}
-
-export interface UpdateWebhookInput {
-  url?: string;
-  events?: EventType[];
-  description?: string | null;
-  status?: 'active' | 'inactive';
-}
-
-// Export Types
-export interface CreateExportInput {
-  format: 'csv' | 'json' | 'xlsx';
-  filters?: {
-    itemIds?: string[];
-    verificationStatus?: 'verified' | 'pending' | 'failed';
-    hasEnrichedData?: boolean;
-    itemType?: string;
-  };
-  fields?: string[]; // Specific fields to include
-}
-
-// Item Update Types
-export interface UpdateItemInput {
-  metadata?: Record<string, string>;
-  verification?: {
-    status: 'verified' | 'pending' | 'failed';
-    reasoning?: string;
-  };
-  customFields?: Record<string, any>;
-}
-
-// Batch Operation Types
-export interface BatchUpdateItemsInput {
-  itemIds: string[];
-  updates: {
-    metadata?: Record<string, string>;
-    addTags?: string[];
-    removeTags?: string[];
-    customFields?: Record<string, any>;
-  };
-}
-
-export interface BatchDeleteItemsInput {
-  itemIds: string[];
-}
-
-// Advanced Filter Types
-export interface ItemFilters {
-  type?: string;
-  verificationStatus?: 'verified' | 'pending' | 'failed';
-  hasEnrichedData?: boolean;
-  enrichmentStatus?: Record<string, 'completed' | 'pending' | 'failed'>;
-  createdAfter?: string;
-  createdBefore?: string;
-  updatedAfter?: string;
-  updatedBefore?: string;
-  metadata?: Record<string, string>;
-  limit?: number;
-  cursor?: string;
-}
-
-// Event Types
-export type EventType =
-  | 'webset.created'
-  | 'webset.deleted'
-  | 'webset.paused'
-  | 'webset.idle'
-  | 'webset.search.created'
-  | 'webset.search.updated'
-  | 'webset.search.completed'
-  | 'webset.search.canceled'
-  | 'webset.item.created'
-  | 'webset.item.enriched'
-  | 'webset.item.updated'
-  | 'webset.item.deleted'
-  | 'import.created'
-  | 'import.completed'
-  | 'import.processing'
-  | 'import.failed'
-  | 'import.canceled'
-  | 'webset.export.created'
-  | 'webset.export.completed'
-  | 'webset.export.failed'
-  | 'webset.monitor.run.started'
-  | 'webset.monitor.run.completed'
-  | 'webset.monitor.run.failed'
-  | 'webhook.created'
-  | 'webhook.updated'
-  | 'webhook.deleted';
-
-// Response Types
-export interface PaginatedList<T> {
-  data: T[];
-  hasMore: boolean;
-  nextCursor?: string | null;
-}
-
-export type PaginatedWebsetList = PaginatedList<Webset>;
-export type PaginatedWebsetItemList = PaginatedList<WebsetItem>;
-export type PaginatedImportList = PaginatedList<Import>;
-export type PaginatedMonitorList = PaginatedList<Monitor>;
-export type PaginatedWebhookList = PaginatedList<Webhook>;
-export type PaginatedWebhookAttemptList = PaginatedList<WebhookAttempt>;
-export type PaginatedEventList = PaginatedList<Event>;
