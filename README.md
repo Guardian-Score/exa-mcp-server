@@ -4,6 +4,8 @@
 [![npm version](https://badge.fury.io/js/exa-mcp-server.svg)](https://www.npmjs.com/package/exa-mcp-server)
 [![smithery badge](https://smithery.ai/badge/exa)](https://smithery.ai/server/exa)
 
+**🚀 Version 3.1.0** - Now with **50+ tools** including comprehensive Websets API support for targeted lead discovery, enrichment, and monitoring!
+
 ## Exa Code: fast, efficient web context for coding agents
 
 Vibe coding should never have a bad vibe. `exa-code` is a huge step towards coding agents that never hallucinate.
@@ -49,7 +51,54 @@ https://mcp.exa.ai/mcp?exaApiKey=YOUREXAKEY
 
 ---
 
-A Model Context Protocol (MCP) server that connects AI assistants like Claude to Exa AI's search capabilities, including web search, research tools, and our new code search feature.
+A Model Context Protocol (MCP) server that connects AI assistants like Claude to Exa AI's search capabilities, including web search, research tools, code search, and comprehensive **Websets API** for targeted lead discovery and enrichment.
+
+## 📊 Websets API - B2B Lead Discovery & Enrichment
+
+**New in v3.1.0!** The Websets API provides **43 working tools** across 7 modules for B2B research and data collection:
+
+### Core Features
+- ✅ **Webset Management** (6 tools) - Create and manage websets for targeted search
+- ✅ **Search Operations** (4 tools) - Run searches within websets to find and verify items
+- ✅ **Enrichment** (5 tools) - Enrich webset items with AI-extracted data
+- ✅ **Item Management** (4 tools) - Manage and retrieve webset items with pagination
+- ✅ **Operations** (20 tools) - Imports, monitors, webhooks, and event tracking
+- ✅ **Batch Operations** (4 tools) - Bulk updates, deletes, and verification
+- 🚧 **Export** (4 tools) - Returns helpful guidance (API not yet implemented by Exa)
+
+### API Status & Limitations
+- **Export functionality**: Not yet available in Exa API (returns guidance on workarounds)
+- **Item filtering**: Limited to `limit`, `cursor`, and `sourceId` parameters
+- **Searches**: Embedded in webset objects (no separate endpoint)
+
+For complete details on API limitations and workarounds, see [API_LIMITATIONS.md](./API_LIMITATIONS.md).
+
+### Enabling Websets Tools
+
+To enable websets tools, add them to the `tools` parameter:
+
+```
+https://mcp.exa.ai/mcp?tools=webset_management,webset_search,webset_enrichment,webset_items,webset_operations,webset_batch
+```
+
+Or for local setup, configure in your MCP settings:
+
+```json
+{
+  "mcpServers": {
+    "exa": {
+      "command": "npx",
+      "args": ["-y", "exa-mcp-server"],
+      "env": {
+        "EXA_API_KEY": "your-api-key",
+        "ENABLED_TOOLS": "web_search_exa,webset_management,webset_search,webset_enrichment"
+      }
+    }
+  }
+}
+```
+
+---
 
 ## Remote Exa MCP 🌐
 

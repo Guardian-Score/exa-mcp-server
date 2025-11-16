@@ -13,6 +13,15 @@ import { registerLinkedInSearchTool } from "./tools/linkedInSearch.js";
 import { registerDeepResearchStartTool } from "./tools/deepResearchStart.js";
 import { registerDeepResearchCheckTool } from "./tools/deepResearchCheck.js";
 import { registerExaCodeTool } from "./tools/exaCode.js";
+import { 
+  registerWebsetManagementTools,
+  registerWebsetSearchTools,
+  registerWebsetEnrichmentTools,
+  registerWebsetItemTools,
+  registerWebsetOperationTools,
+  registerWebsetExportTools,
+  registerWebsetBatchTools 
+} from "./tools/websets/index.js";
 import { log } from "./utils/logger.js";
 
 // Configuration schema for the EXA API key and tool selection
@@ -41,6 +50,13 @@ const availableTools = {
   'deep_researcher_check': { name: 'Deep Researcher Check', description: 'Check status and retrieve results of research task', enabled: false },
   'linkedin_search_exa': { name: 'LinkedIn Search', description: 'Search LinkedIn profiles and companies', enabled: false },
   'company_research_exa': { name: 'Company Research', description: 'Research companies and organizations', enabled: false },
+  'webset_management': { name: 'Webset Management', description: 'Create and manage websets for targeted search and lead discovery', enabled: false },
+  'webset_search': { name: 'Webset Search', description: 'Run searches within websets to find and verify items', enabled: false },
+  'webset_enrichment': { name: 'Webset Enrichment', description: 'Enrich webset items with AI-extracted data', enabled: false },
+  'webset_items': { name: 'Webset Items', description: 'Manage and retrieve webset items', enabled: false },
+  'webset_operations': { name: 'Webset Operations', description: 'Imports, monitors, webhooks, and events management', enabled: false },
+  'webset_export': { name: 'Webset Export', description: 'Export webset data (guidance only - API not yet available)', enabled: false },
+  'webset_batch': { name: 'Webset Batch', description: 'Batch operations on webset items', enabled: false },
 };  
 
 /**
@@ -148,6 +164,42 @@ export default function ({ config }: { config: z.infer<typeof configSchema> }) {
       registeredTools.push('get_code_context_exa');
     }
     
+    // Register Websets API tools (43 tools across 7 modules)
+    if (shouldRegisterTool('webset_management')) {
+      registerWebsetManagementTools(server, normalizedConfig);
+      registeredTools.push('webset_management');
+    }
+    
+    if (shouldRegisterTool('webset_search')) {
+      registerWebsetSearchTools(server, normalizedConfig);
+      registeredTools.push('webset_search');
+    }
+    
+    if (shouldRegisterTool('webset_enrichment')) {
+      registerWebsetEnrichmentTools(server, normalizedConfig);
+      registeredTools.push('webset_enrichment');
+    }
+    
+    if (shouldRegisterTool('webset_items')) {
+      registerWebsetItemTools(server, normalizedConfig);
+      registeredTools.push('webset_items');
+    }
+    
+    if (shouldRegisterTool('webset_operations')) {
+      registerWebsetOperationTools(server, normalizedConfig);
+      registeredTools.push('webset_operations');
+    }
+    
+    if (shouldRegisterTool('webset_export')) {
+      registerWebsetExportTools(server, normalizedConfig);
+      registeredTools.push('webset_export');
+    }
+    
+    if (shouldRegisterTool('webset_batch')) {
+      registerWebsetBatchTools(server, normalizedConfig);
+      registeredTools.push('webset_batch');
+    }
+    
     if (normalizedConfig.debug) {
       log(`Registered ${registeredTools.length} tools: ${registeredTools.join(', ')}`);
     }
@@ -184,6 +236,25 @@ export default function ({ config }: { config: z.infer<typeof configSchema> }) {
               content: {
                 type: "text",
                 text: "I need help with a programming task. Can you search for examples of how to use React hooks for state management?"
+              }
+            }
+          ]
+        };
+      }
+    );
+
+    server.prompt(
+      "websets_help",
+      "Get help with creating and managing websets for targeted research and lead discovery",
+      {},
+      async () => {
+        return {
+          messages: [
+            {
+              role: "user",
+              content: {
+                type: "text",
+                text: "I want to create a webset to find and track companies in a specific industry. Can you help me set up searches and enrichments to discover leads and extract contact information?"
               }
             }
           ]
